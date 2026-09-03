@@ -20,13 +20,34 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
+const CART_STORAGE_KEY = "shopsy-cart";
+
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [hydrated, setHydrated] = useState(false);
 
+  // On first load in the browser, read any saved cart from localStorage
   useEffect(() => {
+    try {
+      const saved = localStorage.getItem(CART_STORAGE_KEY);
+      if (saved) {
+        setItems(JSON.parse(saved));
+      }
+    } catch (err) {
+      console.error("Failed to load cart from storage:", err);
+    }
     setHydrated(true);
   }, []);
+
+  // Whenever the cart changes (after the initial load), save it to localStorage
+  useEffect(() => {
+    if (!hydrated) return;
+    try {
+      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
+    } catch (err) {
+      console.error("Failed to save cart to storage:", err);
+    }
+  }, [items, hydrated]);
 
   const addItem = (product: Product) => {
     setItems((prev) => {
